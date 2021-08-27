@@ -1,0 +1,27 @@
+FROM debian:stretch-slim as base
+
+WORKDIR /tmp
+
+ADD http://localhost:8089/artifactory/test1C/1Cv8.1CD /fs-data/db-data/1Cv8.1CD
+
+#   ./setup-full-8.3.20.1363-x86_64.run --installer-language en --mode unattended --enable-components server
+#   Failed to install packages required to run. To complete the installation of the 1C:Enterprise platform successfully, you need to install the missing packages yourself using the operating system batch manager and restart the platform installation. The missing packages are listed below and can be copied to the clipboard:
+#   libgtk-3-0 libenchant1c2a libharfbuzz-icu0 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad libsecret-1-0 libsoup2.4-1 libsqlite3-0 libegl1-mesa libxrender1 libxfixes3 libxslt1.1 geoclue-2.0
+RUN set -xe \ 
+  && apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libgtk-3-0 libenchant1c2a libharfbuzz-icu0 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad libsecret-1-0 libsoup2.4-1 libsqlite3-0 libegl1-mesa libxrender1 libxfixes3 libxslt1.1 geoclue-2.0
+
+RUN set -xe \ 
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \ 
+    && curl -OL http://host.docker.internal:8089/artifactory/binary1c/8.3.20.1363/setup-full-8.3.20.1363-x86_64.run \
+    && chmod +x setup-full-8.3.20.1363-x86_64.run \
+    && ./setup-full-8.3.20.1363-x86_64.run --installer-language en --mode unattended --enable-components server \
+    && rm setup-full-8.3.20.1363-x86_64.run
+
+WORKDIR /opt/1cv8/x86_64/8.3.20.1363
+
+# default port
+EXPOSE 8314
+
+CMD ./ibsrv --data=/fs-data --address=any
