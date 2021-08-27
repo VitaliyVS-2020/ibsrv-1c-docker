@@ -1,0 +1,34 @@
+version: "3.9"
+services:
+  srv1:
+    build:
+      context: .
+      args:
+        - WEB_PORT=${WEB_PORT_1}
+        - DB_DATA=${DB_DATA_1}
+    volumes:
+      - srv1_data:/fs-data
+    ports:
+      - "${WEB_PORT_1}:${WEB_PORT_1}"
+    networks:
+      - back_net
+ 
+  srv2:
+    build:
+      context: .
+      args:
+        - WEB_PORT=${WEB_PORT_2}
+        - DB_DATA=${DB_DATA_2}
+    volumes:
+      - srv2_data:/fs-data
+    ports:
+      - "${WEB_PORT_2}:${WEB_PORT_2}"
+    networks:
+      - back_net
+      
+volumes:
+  srv1_data:
+  srv2_data:
+      
+networks:
+  back_net:

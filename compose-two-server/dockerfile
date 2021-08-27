@@ -1,0 +1,36 @@
+FROM debian:stretch-slim as base
+
+ARG WEB_PORT=8314
+ARG DB_DATA=http://localhost:8089/artifactory/test1C/1Cv8.1CD
+ARG SETUP_NAME=setup-full-8.3.20.1363-x86_64.run
+ARG SETUP_URL=http://host.docker.internal:8089/artifactory/binary1c/8.3.20.1363/${SETUP_NAME}
+ENV PORT=${WEB_PORT}
+ENV DB=${DB_DATA}
+
+WORKDIR /tmp
+
+ADD ${DB_DATA} /fs-data/db-data/1Cv8.1CD
+
+#   ./distr.run --installer-language en --mode unattended --enable-components server
+#   Failed to install packages required to run. To complete the installation of the 1C:Enterprise platform successfully, you need to install the missing packages yourself using the operating system batch manager and restart the platform installation. The missing packages are listed below and can be copied to the clipboard:
+#   libgtk-3-0 libenchant1c2a libharfbuzz-icu0 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad libsecret-1-0 libsoup2.4-1 libsqlite3-0 libegl1-mesa libxrender1 libxfixes3 libxslt1.1 geoclue-2.0
+RUN set -xe \ 
+  && apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      libgtk-3-0 libenchant1c2a libharfbuzz-icu0 libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 gstreamer1.0-plugins-good gstreamer1.0-plugins-bad libsecret-1-0 libsoup2.4-1 libsqlite3-0 libegl1-mesa libxrender1 libxfixes3 libxslt1.1 geoclue-2.0
+
+RUN set -xe \ 
+    && mkdir -p /tmp \
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \
+    && curl -OL ${SETUP_URL} \
+    && chmod +x ${SETUP_NAME} \
+    && ./${SETUP_NAME} --installer-language en --mode unattended --enable-components server \
+    && rm ${SETUP_NAME}
+
+WORKDIR /opt/1cv8/x86_64/8.3.20.1363
+
+EXPOSE ${WEB_PORT}
+
+CMD echo $PORT \
+    && echo ${DB} \
+    && ./ibsrv --data=/fs-data --address=any --port=$PORT
